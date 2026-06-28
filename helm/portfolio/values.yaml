@@ -1,0 +1,231 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Portfolio Helm Chart — Default Values
+# Override with: helm install portfolio ./helm/portfolio -f my-values.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Number of pod replicas (ignored when autoscaling.enabled = true)
+replicaCount: 1
+
+image:
+  # Build with: docker build -t portfolio:latest -f backend/Dockerfile .
+  repository: portfolio
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ─── Service Account ─────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# ─── Pod-level settings ───────────────────────────────────────────────────────
+podAnnotations: {}
+
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+
+# ─── Service ─────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  port: 80
+  # nodePort: 30080  # only used when type: NodePort
+
+# ─── Ingress ─────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: portfolio.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # - secretName: portfolio-tls
+  #   hosts:
+  #     - portfolio.example.com
+
+# ─── Resource Requests / Limits ───────────────────────────────────────────────
+resources: {}
+  # requests:
+  #   cpu: 50m
+  #   memory: 64Mi
+  # limits:
+  #   cpu: 500m
+  #   memory: 256Mi
+
+# ─── Horizontal Pod Autoscaler ───────────────────────────────────────────────
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# ─── Persistence (for portfolio.json) ────────────────────────────────────────
+persistence:
+  enabled: true
+  # storageClass: ""    # leave empty for cluster default
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  # existingClaim: ""   # use a pre-existing PVC instead of creating one
+
+# ─── Probes ──────────────────────────────────────────────────────────────────
+livenessProbe:
+  httpGet:
+    path: /api/portfolio
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/portfolio
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# ─── Scheduling ──────────────────────────────────────────────────────────────
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Portfolio Application Configuration
+# These values are rendered into config.yaml and stored as a Kubernetes Secret.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Set to use a pre-existing Secret instead of creating one from the values below.
+# The secret must contain a key named "config.yaml".
+existingSecret: ""
+
+config:
+  server:
+    port: 8080
+    trustProxy: false
+
+  auth:
+    username: admin
+    # CHANGE THIS before deploying
+    password: changeme123
+    # CHANGE THIS — must be at least 32 characters
+    jwtSecret: "replace-with-a-long-random-secret-value-here"
+    sessionHours: 24
+
+  llm:
+    enabled: false
+    # active provider key: anthropic | openai | deepseek | groq | gemini | mistral | cohere | ollama
+    provider: anthropic
+
+    providers:
+      anthropic:
+        apiKey: ""
+        model: claude-sonnet-4-6
+        baseUrl: https://api.anthropic.com
+        maxTokens: 4096
+
+      openai:
+        apiKey: ""
+        model: gpt-4o
+        baseUrl: https://api.openai.com/v1
+        maxTokens: 4096
+
+      deepseek:
+        apiKey: ""
+        model: deepseek-chat
+        baseUrl: https://api.deepseek.com/v1
+        maxTokens: 4096
+
+      gemini:
+        apiKey: ""
+        model: gemini-2.0-flash
+        baseUrl: https://generativelanguage.googleapis.com
+        maxTokens: 4096
+
+      groq:
+        apiKey: ""
+        model: llama-3.3-70b-versatile
+        baseUrl: https://api.groq.com/openai/v1
+        maxTokens: 4096
+
+      mistral:
+        apiKey: ""
+        model: mistral-large-latest
+        baseUrl: https://api.mistral.ai/v1
+        maxTokens: 4096
+
+      cohere:
+        apiKey: ""
+        model: command-r-plus
+        baseUrl: https://api.cohere.com/v2
+        maxTokens: 4096
+
+      ollama:
+        apiKey: ""
+        model: llama3.2
+        baseUrl: http://localhost:11434
+        maxTokens: 4096
+
+    parsePrompt: |
+      You are a resume parser. Extract structured information from the resume text provided.
+      Return ONLY valid JSON matching this exact schema with no additional text:
+      {
+        "name": "",
+        "title": "",
+        "email": "",
+        "phone": "",
+        "location": "",
+        "summary": "",
+        "photo_url": "",
+        "links": [{"label": "", "url": ""}],
+        "skills": [""],
+        "experience": [{
+          "company": "",
+          "role": "",
+          "start_date": "",
+          "end_date": "",
+          "description": ""
+        }],
+        "education": [{
+          "institution": "",
+          "degree": "",
+          "year": ""
+        }],
+        "projects": [{
+          "title": "",
+          "slug": "",
+          "summary": "",
+          "my_contribution": "",
+          "tech_stack": [""],
+          "outcomes": "",
+          "start_date": "",
+          "end_date": ""
+        }]
+      }

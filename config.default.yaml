@@ -1,0 +1,71 @@
+server:
+  port: 8080
+  trust_proxy: true   # required behind Fly.io / Render proxy
+
+auth:
+  username: admin
+  password: changeme123
+  # Override with JWT_SECRET env var in production
+  jwt_secret: this-is-a-placeholder-override-via-JWT_SECRET-env
+  session_hours: 24
+
+llm:
+  enabled: false
+  provider: anthropic
+
+  providers:
+    anthropic:
+      api_key: ""
+      model: claude-sonnet-4-6
+      base_url: https://api.anthropic.com
+      max_tokens: 4096
+    openai:
+      api_key: ""
+      model: gpt-4o
+      base_url: https://api.openai.com/v1
+      max_tokens: 4096
+    deepseek:
+      api_key: ""
+      model: deepseek-chat
+      base_url: https://api.deepseek.com/v1
+      max_tokens: 4096
+    gemini:
+      api_key: ""
+      model: gemini-2.0-flash
+      base_url: https://generativelanguage.googleapis.com
+      max_tokens: 4096
+    groq:
+      api_key: ""
+      model: llama-3.3-70b-versatile
+      base_url: https://api.groq.com/openai/v1
+      max_tokens: 4096
+    mistral:
+      api_key: ""
+      model: mistral-large-latest
+      base_url: https://api.mistral.ai/v1
+      max_tokens: 4096
+    cohere:
+      api_key: ""
+      model: command-r-plus
+      base_url: https://api.cohere.com/v2
+      max_tokens: 4096
+    ollama:
+      api_key: ""
+      model: llama3.2
+      base_url: http://localhost:11434
+      max_tokens: 4096
+
+  parse_prompt: |
+    You are a resume parser. Extract structured information from the resume text provided.
+    Return ONLY valid JSON matching this exact schema with no additional text:
+    {
+      "name": "", "title": "", "email": "", "phone": "", "location": "",
+      "summary": "", "photo_url": "",
+      "links": [{"label": "", "url": ""}],
+      "skills": [""],
+      "experience": [{"company": "", "role": "", "start_date": "", "end_date": "", "description": ""}],
+      "education": [{"institution": "", "degree": "", "year": ""}],
+      "projects": [{"title": "", "slug": "", "summary": "", "my_contribution": "",
+                    "tech_stack": [""], "outcomes": "", "start_date": "", "end_date": ""}],
+      "awards": [{"title": "", "date": "", "issuer": "", "description": ""}]
+    }

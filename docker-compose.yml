@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  # Production-style: Go serves both API and built React app
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "9090:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - portfolio_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/portfolio"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Development-only: React dev server with hot reload
+  # Access the app at http://localhost:5173 in development
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  portfolio_data:

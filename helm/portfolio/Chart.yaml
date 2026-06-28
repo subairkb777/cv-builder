@@ -1,0 +1,14 @@
+apiVersion: v2
+name: portfolio
+description: Self-hosted personal portfolio with resume, projects, admin editor, and optional LLM PDF import.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - portfolio
+  - resume
+  - personal-site
+home: https://github.com/alexmorgan/portfolio
+maintainers:
+  - name: portfolio-maintainer
+    email: admin@example.com

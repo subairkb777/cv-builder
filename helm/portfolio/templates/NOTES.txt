@@ -1,0 +1,67 @@
+Portfolio has been deployed!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ACCESS THE APP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+
+{{- else if eq .Values.service.type "NodePort" }}
+  export NODE_PORT=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "portfolio.fullname" . }} -o jsonpath="{.spec.ports[0].nodePort}")
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "  http://$NODE_IP:$NODE_PORT"
+
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  It may take a few minutes for the LoadBalancer IP to be provisioned.
+  Watch with:
+    kubectl get svc --namespace {{ .Release.Namespace }} {{ include "portfolio.fullname" . }} -w
+
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "portfolio.fullname" . }} --template "{{ "{{" }}range (index .status.loadBalancer.ingress 0){{ "}}" }}{{ "{{" }}.{{ "}}" }}{{ "{{" }}end{{ "}}" }}")
+  echo "  http://$SERVICE_IP:{{ .Values.service.port }}"
+
+{{- else }}
+  # Forward a local port (quick access without Ingress):
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "portfolio.fullname" . }} 8080:{{ .Values.service.port }}
+
+  Open: http://localhost:8080
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ADMIN LOGIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Username : {{ .Values.config.auth.username }}
+  Password : (set in values.yaml / your Secret)
+
+  Click the "Login" button in the top-right corner.
+  After login, the /editor route becomes available.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  LLM STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if .Values.config.llm.enabled }}
+  LLM enabled  : {{ .Values.config.llm.provider }}
+  PDF import will auto-fill the editor from uploaded resumes.
+{{- else }}
+  LLM disabled (offline mode).
+  To enable: set config.llm.enabled=true and supply an api_key.
+  helm upgrade {{ .Release.Name }} ./helm/portfolio \
+    --set config.llm.enabled=true \
+    --set config.llm.provider=anthropic \
+    --set config.llm.providers.anthropic.apiKey=YOUR_KEY
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DATA PERSISTENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PVC  : {{ include "portfolio.pvcName" . }}  ({{ .Values.persistence.size }})
+  NOTE : The PVC and Secret have helm.sh/resource-policy=keep
+         They survive helm uninstall to protect your data.
+         Delete manually when you are sure:
+           kubectl delete pvc {{ include "portfolio.pvcName" . }} -n {{ .Release.Namespace }}
+           kubectl delete secret {{ include "portfolio.configSecretName" . }} -n {{ .Release.Namespace }}
