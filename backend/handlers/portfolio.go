@@ -156,14 +156,17 @@ func (h *PortfolioHandler) save(data *llm.PortfolioData) error {
 }
 
 func (h *PortfolioHandler) ensureDataFile() {
-	if _, err := os.Stat(dataFile); err == nil {
-		return
+	// If file exists AND has real data (non-empty name), nothing to do.
+	if raw, err := os.ReadFile(dataFile); err == nil {
+		var existing llm.PortfolioData
+		if json.Unmarshal(raw, &existing) == nil && existing.Name != "" {
+			return
+		}
+		// File exists but is empty/corrupt from a prior failed boot — overwrite.
 	}
 	if err := os.MkdirAll(filepath.Dir(dataFile), 0755); err != nil {
 		return
 	}
-	// Try to load seed data from the data directory alongside portfolio.json.
-	// Falls back to a minimal empty record if no seed file is present.
 	seed := loadSeedOrEmpty()
 	raw, err := json.MarshalIndent(seed, "", "  ")
 	if err != nil {
@@ -172,7 +175,9 @@ func (h *PortfolioHandler) ensureDataFile() {
 	_ = os.WriteFile(dataFile, raw, 0644)
 }
 
-const seedFile = "./data/seed.json"
+// seedFile lives next to the binary (outside the data volume mount) so it
+// survives the volume overlay on first boot in cloud environments.
+const seedFile = "./seed.json"
 
 func loadSeedOrEmpty() *llm.PortfolioData {
 	if raw, err := os.ReadFile(seedFile); err == nil {
@@ -181,6 +186,13 @@ func loadSeedOrEmpty() *llm.PortfolioData {
 			return &d
 		}
 	}
-	return &llm.PortfolioData{}
+	return &llm.PortfolioData{
+		Links:      []llm.Link{},
+		Skills:     []string{},
+		Experience: []llm.Experience{},
+		Education:  []llm.Education{},
+		Projects:   []llm.Project{},
+		Awards:     []llm.Award{},
+	}
 }
 

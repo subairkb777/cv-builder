@@ -36,8 +36,9 @@ export function HomePage() {
     )
   }
 
-  const visibleSkills = skillsExpanded ? data.skills : data.skills.slice(0, SKILLS_VISIBLE)
-  const hiddenCount = data.skills.length - SKILLS_VISIBLE
+  const skills = data.skills ?? []
+  const visibleSkills = skillsExpanded ? skills : skills.slice(0, SKILLS_VISIBLE)
+  const hiddenCount = skills.length - SKILLS_VISIBLE
 
   return (
     <div className="relative">
@@ -76,7 +77,7 @@ export function HomePage() {
               <div className="mb-4 flex justify-center lg:justify-start">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-700/40 bg-green-900/20 px-3 py-1 text-xs font-medium text-green-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                  Available · UAE Work Permit
+                  Available · UAE & India Work Permit
                 </span>
               </div>
 
@@ -94,7 +95,7 @@ export function HomePage() {
                   { label: 'Years Exp.', value: '12+' },
                   { label: 'Companies', value: '6' },
                   { label: 'Projects', value: '7+' },
-                  { label: 'Skills', value: `${data.skills.length}+` },
+                  { label: 'Skills', value: `${skills.length}+` },
                 ].map((stat) => (
                   <div key={stat.label} className="flex flex-col items-center lg:items-start">
                     <span className="text-2xl font-bold text-white">{stat.value}</span>

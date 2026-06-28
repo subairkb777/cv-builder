@@ -40,7 +40,10 @@ COPY --from=frontend-builder /frontend/dist ./frontend/dist
 # Bake in a safe default config (secrets are overridden via env vars at runtime)
 COPY config.default.yaml ./config.yaml
 
-# Data directory (will be overridden by volume in docker-compose / Fly mount)
+# Bake in seed data next to the binary (NOT inside /app/data which is volume-mounted)
+COPY backend/data/portfolio.json ./seed.json
+
+# Data directory (overridden by Fly volume mount at runtime)
 RUN mkdir -p ./data && chown -R portfolio:portfolio /app
 
 USER portfolio
